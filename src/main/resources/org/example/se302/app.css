@@ -1,0 +1,59 @@
+/* Background and font */
+.root {
+    -fx-font-family: "Segoe UI", "Roboto", "Helvetica", "Arial";
+    -fx-font-size: 13px;
+    -fx-background-color: #18181b; /* koyu gri */
+}
+
+/* ToolBar */
+.tool-bar {
+    -fx-background-color: #27272f;
+    -fx-padding: 6 10 6 10;
+    -fx-spacing: 8;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6 14 6 14;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: transparent;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #60a5fa, #2563eb);
+}
+
+.button:pressed {
+    -fx-background-color: #1d4ed8;
+}
+
+/* Labels */
+.label {
+    -fx-text-fill: #e5e7eb;
+}
+
+/* BorderPane Center */
+.border-pane {
+    -fx-padding: 10;
+}
+
+/* TableView */
+.table-view {
+    -fx-background-color: #18181b;
+    -fx-table-cell-border-color: #27272f;
+    -fx-control-inner-background: #18181b;
+    -fx-control-inner-background-alt: #111827;
+    -fx-text-background-color: #e5e7eb;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #111827;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-border-color: #27272f;
+}
