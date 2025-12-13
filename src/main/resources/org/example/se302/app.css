@@ -31,6 +31,24 @@
     -fx-background-color: #1d4ed8;
 }
 
+/* Load Selected */
+.primary-button {
+    -fx-background-color: linear-gradient(to bottom, #22c55e, #16a34a);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6 14 6 14;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: transparent;
+}
+
+.primary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #4ade80, #22c55e);
+}
+
+.primary-button:pressed {
+    -fx-background-color: #16a34a;
+}
 /* Labels */
 .label {
     -fx-text-fill: #e5e7eb;
