@@ -2,14 +2,17 @@
 .root {
     -fx-font-family: "Segoe UI", "Roboto", "Helvetica", "Arial";
     -fx-font-size: 13px;
-    -fx-background-color: #18181b; /* koyu gri */
+    -fx-background-color: #18181b;
 }
 
 /* ToolBar */
 .tool-bar {
-    -fx-background-color: #27272f;
-    -fx-padding: 6 10 6 10;
+    -fx-background-color: #18181b;
+    -fx-padding: 8 14 8 14;
     -fx-spacing: 8;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent transparent rgba(85, 84, 84, 0.3) transparent;
+    -fx-border-width: 3px;
 }
 
 /* Buttons */
@@ -74,4 +77,29 @@
 
 .table-view .column-header, .table-view .filler {
     -fx-border-color: #27272f;
+}
+
+/* Status bar */
+.status-label {
+    -fx-padding: 6 10 6 10;
+    -fx-background-color: #27272f;
+    -fx-text-fill: #e5e7eb;
+}
+
+/* Import/Constraints */
+.import-root {
+    -fx-background-color: #18181b;
+}
+
+.hint-label {
+    -fx-text-fill: #cbd5e1;
+}
+
+.import-actions {
+    -fx-padding: 8 0 0 0;
+}
+
+/* Conflicts */
+.table-row-cell.conflict {
+    -fx-background-color: #7f1d1d;
 }

@@ -18,6 +18,10 @@ import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.Bindings;
+import javafx.scene.layout.StackPane;
+
 import java.io.File;
 
 public class ExamScheduleApp extends Application {
@@ -28,7 +32,9 @@ public class ExamScheduleApp extends Application {
     public void start(Stage stage) {
         // Main toolbar buttons
         Button importBtn = new Button("Import CSVs");
+        Button constraintsBtn = new Button("Constraints");
         Button genBtn = new Button("Generate Schedule");
+        genBtn.getStyleClass().add("primary-button");
         Button exportBtn = new Button("Export Calendar");
         Button confBtn = new Button("Show Conflicts");
 
@@ -41,6 +47,7 @@ public class ExamScheduleApp extends Application {
 
         // Wire actions
         importBtn.setOnAction(e -> openImportWindow(stage));
+        constraintsBtn.setOnAction(e -> openConstraintsWindow(stage, statusLabel));
         genBtn.setOnAction(e -> controller.onGenerateSchedule());
         confBtn.setOnAction(e -> controller.onShowConflicts());
         exportBtn.setOnAction(e -> statusLabel.setText("Export Calendar clicked - implement export via CsvDataWriter."));
@@ -50,15 +57,30 @@ public class ExamScheduleApp extends Application {
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
 
-        ToolBar toolBar = new ToolBar(leftSpacer, importBtn, genBtn, exportBtn, confBtn, rightSpacer);
+        ToolBar toolBar = new ToolBar(leftSpacer, importBtn, constraintsBtn, exportBtn, confBtn, genBtn, rightSpacer);
 
-        // Center area: placeholder table for calendar sessions (later bind to CalendarViewController)
+        // Center area: show ONLY a placeholder until the table has real content
         TableView<String> calendarTable = new TableView<>();
-        calendarTable.setPlaceholder(new Label("No schedule yet. Import CSVs, then generate a schedule."));
+
+        Label centerPlaceholder = new Label("No schedule yet. Import CSVs, then generate a schedule.");
+        centerPlaceholder.getStyleClass().add("hint-label");
+
+        // Table is shown only when it has at least one column AND at least one item
+        BooleanBinding tableHasContent = Bindings.isNotEmpty(calendarTable.getColumns())
+                .and(Bindings.isNotEmpty(calendarTable.getItems()));
+
+        calendarTable.visibleProperty().bind(tableHasContent);
+        calendarTable.managedProperty().bind(calendarTable.visibleProperty());
+
+        centerPlaceholder.visibleProperty().bind(tableHasContent.not());
+        centerPlaceholder.managedProperty().bind(centerPlaceholder.visibleProperty());
+
+        StackPane centerPane = new StackPane(calendarTable, centerPlaceholder);
+        centerPane.setAlignment(Pos.CENTER);
 
         BorderPane root = new BorderPane();
         root.setTop(toolBar);
-        root.setCenter(calendarTable);
+        root.setCenter(centerPane);
         root.setBottom(statusLabel);
 
         Scene scene = new Scene(root, 900, 650);
@@ -95,7 +117,7 @@ public class ExamScheduleApp extends Application {
         fc.setSelectedExtensionFilter(csvFilter);
 
         Label hint = new Label(
-                "Select each CSV with its own button, then click 'Load Selected'.\n" +
+                "Select each CSV file via buttons, then click 'Load Selected'.\n" +
                 "Required: Students, Courses, Classrooms. Optional: Attendance List."
         );
         hint.setWrapText(true);
@@ -106,10 +128,10 @@ public class ExamScheduleApp extends Application {
         importStatus.getStyleClass().add("hint-label");
 
         // Labels show the chosen file names
-        Label studentsLabel = new Label("Students: not selected");
-        Label coursesLabel = new Label("Courses: not selected");
-        Label classroomsLabel = new Label("Classrooms: not selected");
-        Label attendanceLabel = new Label("Attendance List (optional): not selected");
+        Label studentsLabel = new Label("Students: Not Selected");
+        Label coursesLabel = new Label("Courses: Not Selected");
+        Label classroomsLabel = new Label("Classrooms: Not Selected");
+        Label attendanceLabel = new Label("Attendance List (optional): Not Selected");
 
         // One button per CSV
         Button pickStudents = new Button("Select Students CSV");
@@ -277,6 +299,54 @@ public class ExamScheduleApp extends Application {
         importScene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
         importStage.setScene(importScene);
         importStage.show();
+    }
+
+    private void openConstraintsWindow(Stage owner, Label statusLabel) {
+        Stage constraintsStage = new Stage();
+        constraintsStage.initOwner(owner);
+        constraintsStage.initModality(Modality.WINDOW_MODAL);
+        constraintsStage.setTitle("Constraints Configuration");
+
+        Label title = new Label("Constraints");
+        title.getStyleClass().add("hint-label");
+
+        Label note = new Label(
+                "Configure constraints here. (For now this screen only collects values; " +
+                "hooking them into scheduling will be implemented next.)"
+        );
+        note.setWrapText(true);
+        note.setMaxWidth(520);
+        note.getStyleClass().add("hint-label");
+
+        // Simple placeholders (kept minimal)
+        Label fields = new Label(
+                "Suggested fields:\n" +
+                "• Min minutes between exams\n" +
+                "• Max exams per day\n" +
+                "• Allowed days / time ranges"
+        );
+        fields.setWrapText(true);
+
+        Button save = new Button("Save Constraints");
+        save.getStyleClass().add("primary-button");
+        save.setDefaultButton(true);
+
+        save.setOnAction(e -> {
+            statusLabel.setText("Constraints saved (UI only for now).");
+            constraintsStage.close();
+        });
+
+        Region spacer = new Region();
+        VBox root = new VBox(12, title, note, fields, spacer, actions(save));
+        root.setPadding(new Insets(14));
+        root.setAlignment(Pos.TOP_CENTER);
+        root.getStyleClass().add("import-root");
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Scene scene = new Scene(root, 560, 320);
+        scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
+        constraintsStage.setScene(scene);
+        constraintsStage.show();
     }
 
     private HBox row(Button button, Label label) {
