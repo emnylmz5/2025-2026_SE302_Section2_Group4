@@ -26,16 +26,6 @@ public class ExamSession {
         this.roomAssignments = new ArrayList<>();
     }
 
-    public ExamSession(Course course,
-                       LocalDateTime startDateTime,
-                       int durationMinutes,
-                       List<ExamRoomAssignment> roomAssignments) {
-        this.course = course;
-        this.startDateTime = startDateTime;
-        this.durationMinutes = durationMinutes;
-        this.roomAssignments = (roomAssignments == null) ? new ArrayList<>() : new ArrayList<>(roomAssignments);
-    }
-
     public Course getCourse() {
         return course;
     }

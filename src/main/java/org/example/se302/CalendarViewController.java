@@ -35,7 +35,9 @@ public class CalendarViewController {
     private Consumer<String> statusSink;
     private Consumer<ExamSession> onSessionSelected;
 
-    private final DateTimeFormatter dateTimeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private final DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private final DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+    private final DateTimeFormatter dateTimeFmt = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
     public CalendarViewController() {
         this.root = new VBox(12);
@@ -45,7 +47,7 @@ public class CalendarViewController {
         this.datePicker = new DatePicker(LocalDate.now());
         this.datePicker.setMaxWidth(220);
 
-        this.placeholder = new Label("No exam sessions to display.");
+        this.placeholder = new Label("No exam sessions for the selected date.");
         this.placeholder.getStyleClass().add("calendar-placeholder");
         this.placeholder.setMaxWidth(Double.MAX_VALUE);
         this.placeholder.setAlignment(Pos.CENTER);
@@ -105,8 +107,14 @@ public class CalendarViewController {
         TableColumn<ExamSession, String> courseCol = new TableColumn<>("Course");
         courseCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(courseCodeOf(cd.getValue())));
 
+        TableColumn<ExamSession, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(dateOf(cd.getValue())));
+
         TableColumn<ExamSession, String> startCol = new TableColumn<>("Start");
-        startCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(startOf(cd.getValue())));
+        startCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(startTimeOf(cd.getValue())));
+
+        TableColumn<ExamSession, String> endCol = new TableColumn<>("End");
+        endCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(endTimeOf(cd.getValue())));
 
         TableColumn<ExamSession, String> durationCol = new TableColumn<>("Duration");
         durationCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(durationOf(cd.getValue())));
@@ -117,7 +125,7 @@ public class CalendarViewController {
         TableColumn<ExamSession, String> studentsCol = new TableColumn<>("Students");
         studentsCol.setCellValueFactory(cd -> new ReadOnlyStringWrapper(studentsCountOf(cd.getValue())));
 
-        table.getColumns().setAll(courseCol, startCol, durationCol, roomsCol, studentsCol);
+        table.getColumns().setAll(courseCol, dateCol, startCol, endCol, durationCol, roomsCol, studentsCol);
     }
 
     private void wireActions() {
@@ -162,14 +170,49 @@ public class CalendarViewController {
         return codeDirect == null ? "" : String.valueOf(codeDirect);
     }
 
-    private String startOf(ExamSession s) {
+    private String dateOf(ExamSession s) {
+        LocalDateTime dt = startDateTimeOf(s);
+        return dt == null ? "" : dateFmt.format(dt);
+    }
+
+    private String startTimeOf(ExamSession s) {
+        LocalDateTime dt = startDateTimeOf(s);
+        return dt == null ? "" : timeFmt.format(dt);
+    }
+
+    private String endTimeOf(ExamSession s) {
+        LocalDateTime dt = startDateTimeOf(s);
+        Integer dur = durationMinutesOf(s);
+        if (dt == null || dur == null) return "";
+        try {
+            return timeFmt.format(dt.plusMinutes(dur));
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private LocalDateTime startDateTimeOf(ExamSession s) {
         Object v = tryInvoke(s, "getStartDateTime");
         if (v == null) v = tryGetField(s, "startDateTime");
-        if (v instanceof LocalDateTime) {
-            return dateTimeFmt.format((LocalDateTime) v);
-        }
-        return v == null ? "" : String.valueOf(v);
+        if (v instanceof LocalDateTime) return (LocalDateTime) v;
+        return null;
     }
+    private Integer durationMinutesOf(ExamSession s) {
+        if (s == null) return null;
+
+        Object v = tryInvoke(s, "getDurationMinutes");
+        if (v == null) v = tryGetField(s, "durationMinutes");
+        if (v == null) v = tryInvoke(s, "getDuration");
+        if (v == null) v = tryGetField(s, "duration");
+        if (v == null) return null;
+
+        try {
+            return Integer.parseInt(String.valueOf(v));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
 
     private String durationOf(ExamSession s) {
         Object v = tryInvoke(s, "getDurationMinutes");

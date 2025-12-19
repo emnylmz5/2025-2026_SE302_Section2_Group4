@@ -13,6 +13,7 @@ import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.io.File;
 import java.time.DayOfWeek;
@@ -135,8 +136,14 @@ public class ExamScheduleApp extends Application {
         TableColumn<ScheduleRow, String> colCourse = new TableColumn<>("Course");
         colCourse.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().courseCode()));
 
+        TableColumn<ScheduleRow, String> colDate = new TableColumn<>("Date");
+        colDate.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().date()));
+
         TableColumn<ScheduleRow, String> colStart = new TableColumn<>("Start");
-        colStart.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().start()));
+        colStart.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().startTime()));
+
+        TableColumn<ScheduleRow, String> colEnd = new TableColumn<>("End");
+        colEnd.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().endTime()));
 
         TableColumn<ScheduleRow, String> colDur = new TableColumn<>("Duration");
         colDur.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().duration()));
@@ -147,7 +154,7 @@ public class ExamScheduleApp extends Application {
         TableColumn<ScheduleRow, String> colCount = new TableColumn<>("Students");
         colCount.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().studentCount()));
 
-        table.getColumns().setAll(colCourse, colStart, colDur, colRooms, colCount);
+        table.getColumns().setAll(colCourse, colDate, colStart, colEnd, colDur, colRooms, colCount);
     }
 
     private void refreshScheduleTable(Calendar calendar) {
@@ -165,8 +172,26 @@ public class ExamScheduleApp extends Application {
             if (s == null) continue;
 
             String courseCode = safe(s.getCourseCode());
-            String start = (s.getStartDateTime() == null) ? "" : s.getStartDateTime().toString();
-            String duration = s.getDurationMinutes() + " min";
+
+            LocalDateTime st = s.getStartDateTime();
+            Integer durMin = s.getDurationMinutes();
+
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+            DateTimeFormatter tf = DateTimeFormatter.ofPattern("HH:mm");
+
+            String date = (st == null) ? "" : st.format(df);
+            String startTime = (st == null) ? "" : st.format(tf);
+
+            String endTime = "";
+            if (st != null && durMin != null) {
+                try {
+                    endTime = st.plusMinutes(durMin).format(tf);
+                } catch (Exception ignored) {
+                    endTime = "";
+                }
+            }
+
+            String duration = (durMin == null) ? "" : (durMin + " min");
 
             List<String> roomIds = new ArrayList<>();
             int total = 0;
@@ -181,7 +206,9 @@ public class ExamScheduleApp extends Application {
 
             rows.add(new ScheduleRow(
                     courseCode,
-                    start,
+                    date,
+                    startTime,
+                    endTime,
                     duration,
                     String.join(", ", roomIds),
                     String.valueOf(total)
@@ -190,7 +217,7 @@ public class ExamScheduleApp extends Application {
 
         calendarTable.setItems(rows);
         if (calendarSummaryLabel != null) {
-            String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
             calendarSummaryLabel.setText("Sessions: " + rows.size() + "  |  Updated: " + ts);
         }
     }
@@ -244,12 +271,26 @@ public class ExamScheduleApp extends Application {
         Button pickClassrooms = new Button("Select Classrooms CSV");
         Button pickAttendance = new Button("Select Attendance CSV");
 
+        Button loadSelected = new Button("Load Selected");
+        loadSelected.getStyleClass().add("primary-button");
+        loadSelected.setDefaultButton(true);
+        loadSelected.setDisable(true);
+
+        Runnable updateLoadEnabled = () -> {
+            boolean ready = studentsPath[0] != null
+                    && coursesPath[0] != null
+                    && classroomsPath[0] != null
+                    && attendancePath[0] != null;
+            loadSelected.setDisable(!ready);
+        };
+
         pickStudents.setOnAction(e -> {
             fc.setTitle("Select Students CSV");
             File f = fc.showOpenDialog(importStage);
             if (f != null) {
                 studentsPath[0] = f.getAbsolutePath();
                 studentsLabel.setText("Students: " + f.getName());
+                updateLoadEnabled.run();
             }
         });
 
@@ -259,6 +300,7 @@ public class ExamScheduleApp extends Application {
             if (f != null) {
                 coursesPath[0] = f.getAbsolutePath();
                 coursesLabel.setText("Courses: " + f.getName());
+                updateLoadEnabled.run();
             }
         });
 
@@ -268,6 +310,7 @@ public class ExamScheduleApp extends Application {
             if (f != null) {
                 classroomsPath[0] = f.getAbsolutePath();
                 classroomsLabel.setText("Classrooms: " + f.getName());
+                updateLoadEnabled.run();
             }
         });
 
@@ -277,12 +320,9 @@ public class ExamScheduleApp extends Application {
             if (f != null) {
                 attendancePath[0] = f.getAbsolutePath();
                 attendanceLabel.setText("Attendance List: " + f.getName());
+                updateLoadEnabled.run();
             }
         });
-
-        Button loadSelected = new Button("Load Selected");
-        loadSelected.getStyleClass().add("primary-button");
-        loadSelected.setDefaultButton(true);
 
         loadSelected.setOnAction(e -> {
             if (studentsPath[0] == null || coursesPath[0] == null || classroomsPath[0] == null || attendancePath[0] == null) {
@@ -297,7 +337,7 @@ public class ExamScheduleApp extends Application {
             refreshScheduleTable(null);
             updateButtonStates();
 
-            statusLabel.setText("Data loaded. Click 'Generate Schedule'.");
+            statusLabel.setText("Data loaded.");
             importStage.close();
         });
 
@@ -365,60 +405,135 @@ public class ExamScheduleApp extends Application {
         DatePicker examStartPicker = new DatePicker();
         DatePicker examEndPicker = new DatePicker();
 
+        // DatePicker format: dd.MM.yyyy (TR)
+        DateTimeFormatter trDateFmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        StringConverter<LocalDate> trDateConverter = new StringConverter<>() {
+            @Override
+            public String toString(LocalDate date) {
+                return (date == null) ? "" : trDateFmt.format(date);
+            }
+
+            @Override
+            public LocalDate fromString(String string) {
+                if (string == null) return null;
+                String s = string.trim();
+                if (s.isEmpty()) return null;
+                return LocalDate.parse(s, trDateFmt);
+            }
+        };
+        examStartPicker.setConverter(trDateConverter);
+        examEndPicker.setConverter(trDateConverter);
+        examStartPicker.setPromptText("gg.aa.yyyy");
+        examEndPicker.setPromptText("gg.aa.yyyy");
+
         LocalDate curStart = current.getExamWeekStartDate();
         LocalDate curEnd = current.getExamWeekEndDate();
 
         LocalDate today = LocalDate.now();
         examStartPicker.setValue(curStart != null ? curStart : today);
-        examEndPicker.setValue(curEnd != null ? curEnd : today.plusWeeks(2));
+        examEndPicker.setValue(curEnd != null ? curEnd : today.plusWeeks(1));
 
         GridPane form = new GridPane();
-        form.setHgap(10);
+        form.setHgap(12);
         form.setVgap(10);
         form.setAlignment(Pos.CENTER);
-        form.add(new Label("Min minutes between exams"), 0, 0);
+
+        ColumnConstraints c0 = new ColumnConstraints();
+        c0.setHalignment(javafx.geometry.HPos.RIGHT);
+        ColumnConstraints c1 = new ColumnConstraints();
+        c1.setHalignment(javafx.geometry.HPos.LEFT);
+        ColumnConstraints c2 = new ColumnConstraints();
+        c2.setHalignment(javafx.geometry.HPos.RIGHT);
+        ColumnConstraints c3 = new ColumnConstraints();
+        c3.setHalignment(javafx.geometry.HPos.LEFT);
+        form.getColumnConstraints().addAll(c0, c1, c2, c3);
+
+        // row 0: spacing rules
+        form.add(new Label("Min break between exams (students, min)"), 0, 0);
         form.add(minGap, 1, 0);
-        form.add(new Label("Max exams per day"), 0, 1);
-        form.add(maxPerDay, 1, 1);
+        form.add(new Label("Max exams per student/day"), 2, 0);
+        form.add(maxPerDay, 3, 0);
 
-        // Allowed days (opsiyonel ama UI’da var)
+        // Allowed days (UI)
         List<CheckBox> dayChecks = new ArrayList<>();
-        GridPane daysGrid = new GridPane();
-        daysGrid.setHgap(10);
-        daysGrid.setVgap(6);
-        daysGrid.setAlignment(Pos.CENTER);
+        HBox daysBox = new HBox(14);
+        daysBox.setAlignment(Pos.CENTER_LEFT);
 
-        int col = 0, row = 0;
         for (DayOfWeek d : DayOfWeek.values()) {
             CheckBox cb = new CheckBox(d.name().substring(0, 3));
             cb.setSelected(current.getAllowedDays() != null && current.getAllowedDays().contains(d));
             dayChecks.add(cb);
-            daysGrid.add(cb, col, row);
-            col++;
-            if (col == 4) { col = 0; row++; }
+            daysBox.getChildren().add(cb);
         }
 
-        form.add(new Label("Allowed days"), 0, 2);
-        form.add(daysGrid, 1, 2);
+        // row 1: allowed days
+        form.add(new Label("Allowed days"), 0, 1);
+        form.add(daysBox, 1, 1, 3, 1);
 
         ComboBox<String> startTime = new ComboBox<>();
         ComboBox<String> endTime = new ComboBox<>();
         startTime.getItems().addAll("08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00");
-        endTime.getItems().addAll("12:00","13:00","14:00","15:00","16:00","17:00","18:00");
+        endTime.getItems().addAll("12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00");
         startTime.setValue("09:00");
         endTime.setValue("17:00");
 
         HBox timeBox = new HBox(8, startTime, new Label("to"), endTime);
         timeBox.setAlignment(Pos.CENTER);
 
-        form.add(new Label("Allowed time range"), 0, 3);
-        form.add(timeBox, 1, 3);
+        // row 2: allowed time range
+        form.add(new Label("Exam slot time range"), 0, 2);
+        form.add(timeBox, 1, 2, 3, 1);
 
-        form.add(new Label("Exam week start"), 0, 4);
-        form.add(examStartPicker, 1, 4);
+        // row 3: exam week dates (side-by-side)
+        form.add(new Label("Exam week start"), 0, 3);
+        form.add(examStartPicker, 1, 3);
+        form.add(new Label("Exam week end"), 2, 3);
+        form.add(examEndPicker, 3, 3);
 
-        form.add(new Label("Exam week end"), 0, 5);
-        form.add(examEndPicker, 1, 5);
+        // --- Exam duration calculation coefficients ---
+        Separator coefSep = new Separator();
+        coefSep.setMaxWidth(Double.MAX_VALUE);
+        coefSep.getStyleClass().add("constraints-section-separator");
+        form.add(coefSep, 0, 4, 4, 1);
+
+        Label coefTitle = new Label("Exam duration coefficients");
+        coefTitle.getStyleClass().add("constraints-section-title");
+        coefTitle.setMaxWidth(Double.MAX_VALUE);
+        coefTitle.setAlignment(Pos.CENTER_LEFT);
+        GridPane.setHgrow(coefTitle, Priority.ALWAYS);
+        form.add(coefTitle, 0, 5, 4, 1);
+
+        Label coefHint = new Label("Adjust how exam duration is calculated.");
+        coefHint.getStyleClass().add("constraints-section-hint");
+        coefHint.setWrapText(true);
+        coefHint.setMaxWidth(Double.MAX_VALUE);
+        coefHint.setAlignment(Pos.CENTER_LEFT);
+        GridPane.setHgrow(coefHint, Priority.ALWAYS);
+        form.add(coefHint, 0, 6, 4, 1);
+
+        Spinner<Integer> baseMinutes = new Spinner<>(0, 600, current.getBaseExamDurationMinutes(), 5);
+        baseMinutes.setEditable(true);
+
+        Spinner<Integer> minutesPerCredit = new Spinner<>(0, 300, current.getCreditDurationCoefficientMinutes(), 1);
+        minutesPerCredit.setEditable(true);
+
+        Spinner<Integer> roundingMinutes = new Spinner<>(1, 60, current.getDurationRoundingMinutes(), 1);
+        roundingMinutes.setEditable(true);
+
+        Spinner<Integer> minDuration = new Spinner<>(1, 600, current.getMinExamDurationMinutes(), 5);
+        minDuration.setEditable(true);
+
+        // row 7: base + per-credit side-by-side
+        form.add(new Label("Base duration (min)"), 0, 7);
+        form.add(baseMinutes, 1, 7);
+        form.add(new Label("Minutes per credit"), 2, 7);
+        form.add(minutesPerCredit, 3, 7);
+
+        // row 8: rounding + minimum duration
+        form.add(new Label("Round to (min)"), 0, 8);
+        form.add(roundingMinutes, 1, 8);
+        form.add(new Label("Minimum exam duration (min)"), 2, 8);
+        form.add(minDuration, 3, 8);
 
         Label note = new Label("These constraints will be used the next time you generate a schedule.");
         note.getStyleClass().add("hint-label");
@@ -453,6 +568,12 @@ public class ExamScheduleApp extends Application {
                 c.setExamWeekStartDate(examStartPicker.getValue());
                 c.setExamWeekEndDate(examEndPicker.getValue());
 
+                // exam duration coefficients
+                c.setBaseExamDurationMinutes(baseMinutes.getValue());
+                c.setCreditDurationCoefficientMinutes(minutesPerCredit.getValue());
+                c.setDurationRoundingMinutes(roundingMinutes.getValue());
+                c.setMinExamDurationMinutes(minDuration.getValue());
+
                 controller.setConstraints(c);
                 statusLabel.setText("Constraints saved.");
                 w.close();
@@ -469,7 +590,7 @@ public class ExamScheduleApp extends Application {
         root.getStyleClass().add("import-root");
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        Scene scene = new Scene(root, 620, 400);
+        Scene scene = new Scene(root, 860, 500);
         scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
         w.setScene(scene);
         w.setResizable(false);
@@ -529,7 +650,15 @@ public class ExamScheduleApp extends Application {
         return s == null ? "" : s;
     }
 
-    private record ScheduleRow(String courseCode, String start, String duration, String rooms, String studentCount) {}
+    private record ScheduleRow(
+            String courseCode,
+            String date,
+            String startTime,
+            String endTime,
+            String duration,
+            String rooms,
+            String studentCount
+    ) {}
 
     public static void main(String[] args) {
         launch();

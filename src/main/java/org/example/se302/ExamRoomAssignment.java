@@ -41,18 +41,6 @@ public class ExamRoomAssignment {
         this.students = (students == null) ? new ArrayList<>() : new ArrayList<>(students);
     }
 
-    public void addStudent(Student s) {
-        if (s == null) return;
-        if (this.students == null) this.students = new ArrayList<>();
-        this.students.add(s);
-    }
-
-    public void removeStudent(Student s) {
-        if (this.students != null) {
-            this.students.remove(s);
-        }
-    }
-
     public int getStudentCount() {
         return students == null ? 0 : students.size();
     }

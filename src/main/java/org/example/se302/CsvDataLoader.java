@@ -57,39 +57,6 @@ public class CsvDataLoader {
 
         return out;
     }
-
-    public Constraints loadConstraints(String csvPath) {
-        CsvTable table = readCsv(csvPath);
-        if (table.rows.isEmpty()) return null;
-
-        Constraints constraints = newInstanceOrNull(Constraints.class);
-        if (constraints == null) return null;
-
-        int keyCol = findColumn(table.headers, "key");
-        int valueCol = findColumn(table.headers, "value", "val");
-
-        if (keyCol >= 0 && valueCol >= 0) {
-            for (List<String> r : table.rows) {
-                String key = getCell(r, keyCol);
-                String val = getCell(r, valueCol);
-                if (key == null || key.isBlank()) continue;
-                setByName(constraints, key, val);
-            }
-            return constraints;
-        }
-
-        // Header-as-properties (use first data row)
-        List<String> first = table.rows.get(0);
-        for (int i = 0; i < table.headers.size() && i < first.size(); i++) {
-            String h = table.headers.get(i);
-            String v = first.get(i);
-            if (h == null || h.isBlank()) continue;
-            setByName(constraints, h, v);
-        }
-
-        return constraints;
-    }
-
     public void linkAttendance(List<Student> students, List<Course> courses, AttendanceData attendance) {
         if (students == null || courses == null || attendance == null) return;
 

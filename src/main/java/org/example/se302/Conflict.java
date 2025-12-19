@@ -16,12 +16,6 @@ public class Conflict {
         this.sessions = new ArrayList<>();
     }
 
-    public Conflict(ConflictType type, List<ExamSession> sessions, String description) {
-        this.type = type;
-        this.sessions = (sessions == null) ? new ArrayList<>() : new ArrayList<>(sessions);
-        this.description = description;
-    }
-
     public ConflictType getType() {
         return type;
     }

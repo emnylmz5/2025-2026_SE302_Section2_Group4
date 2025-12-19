@@ -119,10 +119,6 @@ public class SchedulingEngine {
         return calendar;
     }
 
-    public Calendar generateSchedule(List<Course> courses, List<Classroom> classrooms) {
-        return generateSchedule(courses, classrooms, new Constraints());
-    }
-
     private boolean isAllowedDay(LocalDate d, Constraints constraints) {
         List<DayOfWeek> allowed = constraints.getAllowedDays();
         if (allowed == null || allowed.isEmpty()) return true;
@@ -368,9 +364,21 @@ public class SchedulingEngine {
         int k = Math.max(0, constraints.getCreditDurationCoefficientMinutes());
 
         Integer credit = creditOf(c);
-        if (credit == null || credit <= 0) return Math.max(DEFAULT_DURATION_MIN, base);
+        int raw;
+        if (credit == null || credit <= 0) {
+            raw = Math.max(DEFAULT_DURATION_MIN, base);
+        } else {
+            raw = base + (credit * k);
+            raw = Math.max(DEFAULT_DURATION_MIN, raw);
+        }
 
-        return base + (credit * k);
+        // Optional rounding: round UP to the nearest multiple (e.g., 5 min -> 135, 140, 145 ...)
+        int roundTo = Math.max(1, constraints.getDurationRoundingMinutes());
+        if (roundTo > 1) {
+            raw = ((raw + roundTo - 1) / roundTo) * roundTo;
+        }
+
+        return raw;
     }
 
     private List<Student> extractEnrolledStudents(Course c) {

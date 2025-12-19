@@ -42,12 +42,9 @@ public class MainController {
         this.courses.clear();
         this.classrooms.clear();
         this.attendanceData = null;
-        status("MainController initialized with an empty calendar.");
+        status("Exam Schedular initialized with an empty calendar.");
     }
 
-    public void onLoadData() {
-        status("onLoadData() called - use onLoadData(studentsPath, coursesPath, classroomsPath, attendanceListPath) from the UI.");
-    }
 
     public void onLoadData(String studentsPath,
                            String coursesPath,
@@ -124,47 +121,6 @@ public class MainController {
             }
         } catch (Exception ex) {
             status("Schedule generation failed: " + ex.getMessage());
-        }
-    }
-
-    public void onShowConflicts() {
-        if (calendar == null) {
-            status("No calendar generated yet. Cannot show conflicts.");
-            return;
-        }
-
-        try {
-            List<Conflict> conflicts = conflictDetection.detectConflicts(calendar);
-            if (conflicts == null) conflicts = List.of();
-
-            if (conflicts.isEmpty()) {
-                status("No conflicts detected.");
-            } else {
-                status("Conflicts detected: " + conflicts.size());
-
-                java.util.Map<ConflictType, Integer> counts = new java.util.EnumMap<>(ConflictType.class);
-                for (Conflict c : conflicts) {
-                    ConflictType t = (c == null) ? null : c.getType();
-                    if (t != null) counts.put(t, counts.getOrDefault(t, 0) + 1);
-                }
-                for (java.util.Map.Entry<ConflictType, Integer> e : counts.entrySet()) {
-                    status("- " + e.getKey() + ": " + e.getValue());
-                }
-
-                int limit = Math.min(10, conflicts.size());
-                for (int i = 0; i < limit; i++) {
-                    status("#" + (i + 1) + " " + conflicts.get(i));
-                }
-                if (conflicts.size() > limit) {
-                    status("... (" + (conflicts.size() - limit) + " more)");
-                }
-            }
-
-            if (conflictsSink != null) {
-                conflictsSink.accept(conflicts);
-            }
-        } catch (Exception ex) {
-            status("Conflict detection failed: " + ex.getMessage());
         }
     }
 

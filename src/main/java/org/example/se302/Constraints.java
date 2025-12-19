@@ -27,13 +27,15 @@ public class Constraints {
     private int slotStepMinutes;
     private int baseExamDurationMinutes;
     private int creditDurationCoefficientMinutes;
+    private int durationRoundingMinutes;
+    private int minExamDurationMinutes;
 
     public Constraints() {
         this.minMinutesBetweenExams = 60;
         this.maxExamsPerDay = 2;
         this.allowedDays = new ArrayList<>(EnumSet.range(DayOfWeek.MONDAY, DayOfWeek.FRIDAY));
         this.allowedTimeRanges = new ArrayList<>();
-        this.allowedTimeRanges.add(new TimeRange(LocalTime.of(9, 0), LocalTime.of(17, 0)));
+        this.allowedTimeRanges.add(new TimeRange(LocalTime.of(9, 0), LocalTime.of(19, 0)));
         this.roomSpecificRules = new HashMap<>();
         this.examWeekStartDate = null;
         this.examWeekEndDate = null;
@@ -41,24 +43,8 @@ public class Constraints {
         this.slotStepMinutes = 5;
         this.baseExamDurationMinutes = 90;
         this.creditDurationCoefficientMinutes = 15;
-    }
-
-    public Constraints(int minMinutesBetweenExams,
-                       int maxExamsPerDay,
-                       List<DayOfWeek> allowedDays,
-                       List<TimeRange> allowedTimeRanges,
-                       Map<String, String> roomSpecificRules) {
-        this(minMinutesBetweenExams, maxExamsPerDay, allowedDays, allowedTimeRanges, roomSpecificRules, null, null, 10);
-    }
-
-    public Constraints(int minMinutesBetweenExams,
-                       int maxExamsPerDay,
-                       List<DayOfWeek> allowedDays,
-                       List<TimeRange> allowedTimeRanges,
-                       Map<String, String> roomSpecificRules,
-                       LocalDate examWeekStartDate,
-                       LocalDate examWeekEndDate) {
-        this(minMinutesBetweenExams, maxExamsPerDay, allowedDays, allowedTimeRanges, roomSpecificRules, examWeekStartDate, examWeekEndDate, 10);
+        this.durationRoundingMinutes = 5;
+        this.minExamDurationMinutes = 120;
     }
 
     public Constraints(int minMinutesBetweenExams,
@@ -77,10 +63,12 @@ public class Constraints {
         setExamWeekStartDate(examWeekStartDate);
         setExamWeekEndDate(examWeekEndDate);
         setRoomTurnoverMinutes(roomTurnoverMinutes);
-        // Defaults (can be changed from UI)
-        this.slotStepMinutes = 10;
+        // Defaults
+        this.slotStepMinutes = 5;
         this.baseExamDurationMinutes = 90;
         this.creditDurationCoefficientMinutes = 15;
+        this.durationRoundingMinutes = 5;
+        this.minExamDurationMinutes = 120;
     }
 
     public int getMinMinutesBetweenExams() {
@@ -121,44 +109,8 @@ public class Constraints {
         this.allowedTimeRanges = (allowedTimeRanges == null) ? new ArrayList<>() : new ArrayList<>(allowedTimeRanges);
     }
 
-    public Map<String, String> getRoomSpecificRules() {
-        return roomSpecificRules == null ? Map.of() : Collections.unmodifiableMap(roomSpecificRules);
-    }
-
     public void setRoomSpecificRules(Map<String, String> roomSpecificRules) {
         this.roomSpecificRules = (roomSpecificRules == null) ? new HashMap<>() : new HashMap<>(roomSpecificRules);
-    }
-
-    public boolean isDayAllowed(DayOfWeek day) {
-        if (day == null) return false;
-        return allowedDays != null && allowedDays.contains(day);
-    }
-
-    public boolean isTimeAllowed(LocalTime time) {
-        if (time == null) return false;
-        if (allowedTimeRanges == null || allowedTimeRanges.isEmpty()) return true;
-        for (TimeRange tr : allowedTimeRanges) {
-            if (tr != null && tr.contains(time)) return true;
-        }
-        return false;
-    }
-
-    public void addAllowedTimeRange(TimeRange range) {
-        if (range == null) return;
-        if (allowedTimeRanges == null) allowedTimeRanges = new ArrayList<>();
-        allowedTimeRanges.add(range);
-    }
-
-    public void putRoomRule(String roomId, String rule) {
-        if (roomId == null || roomId.isBlank()) return;
-        if (roomSpecificRules == null) roomSpecificRules = new HashMap<>();
-        roomSpecificRules.put(roomId, rule);
-    }
-
-    public String getRoomRule(String roomId) {
-        if (roomId == null || roomId.isBlank()) return null;
-        if (roomSpecificRules == null) return null;
-        return roomSpecificRules.get(roomId);
     }
 
     public LocalDate getExamWeekStartDate() {
@@ -236,21 +188,59 @@ public class Constraints {
         this.creditDurationCoefficientMinutes = creditDurationCoefficientMinutes;
     }
 
-    public Constraints copy() {
-        Constraints c = new Constraints(
-                minMinutesBetweenExams,
-                maxExamsPerDay,
-                allowedDays,
-                allowedTimeRanges,
-                roomSpecificRules,
-                examWeekStartDate,
-                examWeekEndDate,
-                roomTurnoverMinutes
-        );
-        c.setSlotStepMinutes(slotStepMinutes);
-        c.setBaseExamDurationMinutes(baseExamDurationMinutes);
-        c.setCreditDurationCoefficientMinutes(creditDurationCoefficientMinutes);
-        return c;
+    public int getDurationRoundingMinutes() {
+        return durationRoundingMinutes;
+    }
+
+    public void setDurationRoundingMinutes(int durationRoundingMinutes) {
+        if (durationRoundingMinutes < 1) {
+            throw new IllegalArgumentException("durationRoundingMinutes must be at least 1");
+        }
+        this.durationRoundingMinutes = durationRoundingMinutes;
+    }
+
+    public int getMinExamDurationMinutes() {
+        return minExamDurationMinutes;
+    }
+
+    public void setMinExamDurationMinutes(int minExamDurationMinutes) {
+        if (minExamDurationMinutes < 1) {
+            throw new IllegalArgumentException("minExamDurationMinutes must be at least 1");
+        }
+        this.minExamDurationMinutes = minExamDurationMinutes;
+    }
+
+    // --- Aliases to make UI wiring easier (same underlying fields) ---
+    public int getExamBaseDurationMinutes() {
+        return getBaseExamDurationMinutes();
+    }
+
+    public void setExamBaseDurationMinutes(int minutes) {
+        setBaseExamDurationMinutes(minutes);
+    }
+
+    public int getMinutesPerCredit() {
+        return getCreditDurationCoefficientMinutes();
+    }
+
+    public void setMinutesPerCredit(int minutes) {
+        setCreditDurationCoefficientMinutes(minutes);
+    }
+
+    public int getRoundingMinutes() {
+        return getDurationRoundingMinutes();
+    }
+
+    public void setRoundingMinutes(int minutes) {
+        setDurationRoundingMinutes(minutes);
+    }
+
+    public int getRoundToMinutes() {
+        return getDurationRoundingMinutes();
+    }
+
+    public void setRoundToMinutes(int minutes) {
+        setDurationRoundingMinutes(minutes);
     }
 
     @Override
@@ -267,6 +257,8 @@ public class Constraints {
                 ", slotStepMinutes=" + slotStepMinutes +
                 ", baseExamDurationMinutes=" + baseExamDurationMinutes +
                 ", creditDurationCoefficientMinutes=" + creditDurationCoefficientMinutes +
+                ", durationRoundingMinutes=" + durationRoundingMinutes +
+                ", minExamDurationMinutes=" + minExamDurationMinutes +
                 '}';
     }
 
@@ -284,12 +276,14 @@ public class Constraints {
                 && roomTurnoverMinutes == that.roomTurnoverMinutes
                 && slotStepMinutes == that.slotStepMinutes
                 && baseExamDurationMinutes == that.baseExamDurationMinutes
-                && creditDurationCoefficientMinutes == that.creditDurationCoefficientMinutes;
+                && creditDurationCoefficientMinutes == that.creditDurationCoefficientMinutes
+                && durationRoundingMinutes == that.durationRoundingMinutes
+                && minExamDurationMinutes == that.minExamDurationMinutes;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(minMinutesBetweenExams, maxExamsPerDay, allowedDays, allowedTimeRanges, roomSpecificRules, examWeekStartDate, examWeekEndDate, roomTurnoverMinutes, slotStepMinutes, baseExamDurationMinutes, creditDurationCoefficientMinutes);
+        return Objects.hash(minMinutesBetweenExams, maxExamsPerDay, allowedDays, allowedTimeRanges, roomSpecificRules, examWeekStartDate, examWeekEndDate, roomTurnoverMinutes, slotStepMinutes, baseExamDurationMinutes, creditDurationCoefficientMinutes, durationRoundingMinutes, minExamDurationMinutes);
     }
 
     public static class TimeRange {
