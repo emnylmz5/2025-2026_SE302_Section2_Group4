@@ -1,0 +1,61 @@
+courseCode,courseName,credit
+CSE101,CSE Core 1.1,5
+CSE102,CSE Core 1.2,3
+CSE103,CSE Core 1.3,3
+CSE121,CSE Core 2.1,5
+CSE122,CSE Core 2.2,4
+CSE123,CSE Core 2.3,3
+CSE141,CSE Core 3.1,3
+CSE142,CSE Core 3.2,3
+CSE143,CSE Core 3.3,5
+CSE161,CSE Core 4.1,3
+CSE162,CSE Core 4.2,5
+CSE163,CSE Core 4.3,5
+EEE101,EEE Core 1.1,5
+EEE102,EEE Core 1.2,3
+EEE103,EEE Core 1.3,5
+EEE121,EEE Core 2.1,4
+EEE122,EEE Core 2.2,3
+EEE123,EEE Core 2.3,3
+EEE141,EEE Core 3.1,3
+EEE142,EEE Core 3.2,3
+EEE143,EEE Core 3.3,3
+EEE161,EEE Core 4.1,5
+EEE162,EEE Core 4.2,5
+EEE163,EEE Core 4.3,3
+MATH101,MATH Core 1.1,5
+MATH102,MATH Core 1.2,3
+MATH103,MATH Core 1.3,5
+MATH121,MATH Core 2.1,5
+MATH122,MATH Core 2.2,5
+MATH123,MATH Core 2.3,5
+MATH141,MATH Core 3.1,4
+MATH142,MATH Core 3.2,3
+MATH143,MATH Core 3.3,4
+MATH161,MATH Core 4.1,5
+MATH162,MATH Core 4.2,4
+MATH163,MATH Core 4.3,3
+BUS101,BUS Core 1.1,3
+BUS102,BUS Core 1.2,5
+BUS103,BUS Core 1.3,4
+BUS121,BUS Core 2.1,4
+BUS122,BUS Core 2.2,4
+BUS123,BUS Core 2.3,3
+BUS141,BUS Core 3.1,3
+BUS142,BUS Core 3.2,4
+BUS143,BUS Core 3.3,3
+BUS161,BUS Core 4.1,3
+BUS162,BUS Core 4.2,4
+BUS163,BUS Core 4.3,3
+UNI201,UNI Elective 1: Entrepreneurship,3
+UNI202,UNI Elective 2: Sustainability,3
+UNI203,UNI Elective 3: Academic Writing,3
+UNI204,UNI Elective 4: Sustainability,2
+UNI205,UNI Elective 5: Data Literacy,2
+UNI206,UNI Elective 6: Sustainability,3
+UNI207,UNI Elective 7: Project Management,3
+UNI208,UNI Elective 8: Sustainability,2
+UNI209,UNI Elective 9: Project Management,2
+UNI210,UNI Elective 10: Academic Writing,2
+UNI211,UNI Elective 11: Entrepreneurship,2
+UNI212,UNI Elective 12: Ethics,2
